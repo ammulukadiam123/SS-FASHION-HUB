@@ -236,7 +236,28 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 console.log("Firebase Connected Successfully");
+async function addProduct(){
 
+  const name=document.getElementById("pname").value;
+  const price=document.getElementById("pprice").value;
+  const category=document.getElementById("pcategory").value;
+  const image=document.getElementById("pimage").value;
+
+  await addDoc(collection(db,"products"),{
+    id:Date.now(),
+    name,
+    price,
+    category,
+    colors:["Default"],
+    sizes:["S,M,L,XL"],
+    images:[image],
+    hidden:false
+  });
+
+  alert("Product added 🔥");
+
+  loadProducts();
+}
 
 
 let products = [];
