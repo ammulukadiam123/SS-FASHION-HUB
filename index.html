@@ -185,10 +185,28 @@ body{
     id="search"
     placeholder="Search Products"
   >
-
   <button onclick="toggleCart()">
     Cart (<span id="cart-count">0</span>)
   </button>
+</div>
+<div id="admin-login" style="margin:10px;">
+  <h3>Admin Login</h3>
+
+  <input type="text" id="adminId" placeholder="Admin ID"><br><br>
+  <input type="password" id="adminPass" placeholder="Password"><br><br>
+
+  <button onclick="checkAdmin()">Login</button>
+</div>
+
+<div id="admin-panel" style="display:none; margin:10px;">
+  <h3>Admin Panel</h3>
+
+  <input id="pname" placeholder="Product Name"><br><br>
+  <input id="pprice" placeholder="Price"><br><br>
+  <input id="pcategory" placeholder="Category"><br><br>
+  <input id="pimage" placeholder="Image URL"><br><br>
+
+  <button onclick="addProduct()">Add Product</button>
 </div>
 
 <div class="categories">
@@ -487,6 +505,22 @@ async function loadProducts(){
 
   displayProducts();
 }
+function checkAdmin(){
+
+  const id = document.getElementById("adminId").value;
+  const pass = document.getElementById("adminPass").value;
+
+  const ADMIN_ID = "admin";
+  const ADMIN_PASS = "1234";
+
+  if(id === ss fashion && pass === 1624){
+ document.getElementById("admin-panel").style.display = "block";
+    document.getElementById("admin-login").style.display = "none";
+    alert("Login Success 🔥");
+  } else {
+    alert("Wrong ID or Password ❌");
+  }
+}
 
 function orderWhatsApp(){
 
@@ -506,8 +540,7 @@ Amount: ₹${item.price * item.qty}
 
 `).join("----------------
 ");
-
-  const phone = "919999999999";
+  const phone = "917981046421";
 
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
