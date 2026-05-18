@@ -1,6 +1,656 @@
-<!DOCTYPE html>
-<html lang="en">
+
+<!DOCTYPE html><html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SS-FASHION HUB</title>
+<style>
+body{margin:0;font-family:Arial;background:#f5f5f5}
+
+.header{
+  background:url('https://i.ibb.co/6y1Z1kK/banner.jpg') center/cover no-repeat;
+  color:white;
+  text-align:center;
+  padding:40px 10px;
+  font-size:28px;
+  font-weight:bold;
+}
+
+.search-bar{padding:10px}
+.search-bar input{width:100%;padding:8px}
+
+.filters{display:flex;overflow:auto;gap:8px;padding:10px}
+.filters button{padding:6px 10px;border:none;border-radius:6px;background:#ddd}
+
+#productList{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  padding:10px;
+}
+
+.card{
+  background:white;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+}
+
+.main-img{width:100%;height:150px;object-fit:contain}
+
+.thumb-container{display:flex;gap:5px;flex-wrap:wrap}
+.thumb{width:45px;height:45px;object-fit:cover;border-radius:6px;border:1px solid #ccc;cursor:pointer}
+
+.color-btn{width:22px;height:22px;border-radius:50%;margin:3px;border:2px solid #ccc;display:inline-block;cursor:pointer}
+.size-btn{padding:5px 8px;margin:3px;border:1px solid #ccc;border-radius:6px;cursor:pointer}
+.selected{border:2px solid green}
+
+button{width:100%;margin-top:5px;padding:8px;border:none;border-radius:6px}
+.wa{background:#25D366;color:white}
+.cart-btn{background:black;color:white}
+
+.admin{padding:10px;background:white;margin:10px;border-radius:10px}
+input{width:100%;padding:8px;margin-top:5px}
+.cart-box{
+  position:fixed;
+  top:60px;
+  right:10px;
+  width:90%;
+  max-width:300px;
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  z-index:1000;
+}
+.cart-btn:disabled{
+  background:gray;
+  cursor:not-allowed;
+}
+/* Overlay blur */
+#overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  backdrop-filter:blur(5px);
+  background:rgba(0,0,0,0.3);
+  opacity:0;
+  pointer-events:none;
+  transition:0.3s;
+  z-index:999;
+}
+
+#overlay.active{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* Cart animation */
+.cart-box{
+  position:fixed;
+  top:0;
+  right:-100%;
+  width:80%;
+  max-width:320px;
+  height:100%;
+  background:white;
+  padding:15px;
+  transition:0.4s;
+  z-index:1000;
+  overflow:auto;
+}
+
+.cart-box.show{
+  right:0;
+}
+.cart-item{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+  border-bottom:1px solid #ddd;
+  padding-bottom:10px;
+}
+
+.cart-img{
+  width:70px;
+  height:70px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.cart-details h4{
+  margin:0;
+  font-size:14px;
+}
+
+.cart-details p{
+  margin:2px 0;
+  font-size:13px;
+}
+.modal{
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:black;
+  z-index:2000;
+}
+
+.modal-content{
+  background:white;
+  height:100%;
+  overflow:auto;
+  padding:15px;
+}
+
+.modal-img{
+  width:100%;
+  height:300px;
+  object-fit:cover;
+}
+
+.close{
+  font-size:25px;
+  float:right;
+  cursor:pointer;
+}
+</style></head><body><div class="header">
+  SS-FASHION HUB 
+  <span onclick="toggleCart()" style="float:right;cursor:pointer">
+    🛒 (<span id="cartCount">0</span>)
+  </span>
+</div><div id="cartBox" class="cart-box">
+  <h3>🛒 Your Cart</h3>
+  <div id="cartItems"></div>
+  <h4 id="cartTotal">Total: ₹0</h4>
+  <button onclick="checkoutWhatsApp()">Order All</button>
+</div><div class="search-bar">
+<input id="search" placeholder="Search products..." oninput="loadProducts()">
+</div><div style="padding:10px;">
+  🛒 Cart: <span id="cartCount">0</span>
+</div>
+<div id="overlay" onclick="toggleCart()"></div>
+<div id="productModal" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+z-index:9999;
+backdrop-filter:blur(5px);
+">
+
+  <div style="
+  background:white;
+  width:100%;
+  height:100%;
+  overflow:auto;
+  padding:15px;
+  box-sizing:border-box;
+  ">
+
+    <div style="text-align:right;">
+      <span onclick="closeProduct()" style="
+      font-size:30px;
+      cursor:pointer;
+      font-weight:bold;
+      ">
+      ✖
+      </span>
+    </div>
+
+    <img id="modalImg" style="
+    width:100%;
+    height:320px;
+    object-fit:cover;
+    border-radius:12px;
+    ">
+
+    <div id="modalThumbs" style="
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+    overflow:auto;
+    "></div>
+
+    <h2 id="modalName" style="margin-top:15px;"></h2>
+
+    <h3 id="modalPrice" style="color:green;"></h3>
+
+    <div id="modalSizes" style="
+    display:flex;
+    gap:8px;
+    margin-top:15px;
+    flex-wrap:wrap;
+    "></div>
+
+    <div id="modalColors" style="
+    display:flex;
+    gap:10px;
+    margin-top:15px;
+    flex-wrap:wrap;
+    "></div>
+
+  </div>
+</div><div class="filters">
+<button onclick="filterCategory('')">All</button>
+<button onclick="filterCategory('shirts')">Shirts</button>
+<button onclick="filterCategory('pants')">Pants</button>
+<button onclick="filterCategory('hoodies')">Hoodies</button>
+<button onclick="filterCategory('tshirts')">T-Shirts</button>
+<button onclick="filterCategory('nightpants')">Night Pants</button>
+</div><div id="loginBox" class="admin" style="display:none;">
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+</div><div id="adminPanel" class="admin" style="display:none;">
+<input id="name" placeholder="Name">
+<input id="price" placeholder="Price">
+<input id="image" placeholder="Images (comma separated)">
+<input id="stock" placeholder="Stock (number)">
+<input id="category" placeholder="Category">
+<input id="sizes" placeholder="Sizes (S,M,L)">
+<input id="colors" placeholder="Colors (red,black)">
+<button onclick="saveProduct()">Save</button>
+</div><div id="productList"></div><script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } 
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAaG2HgAs8wWxJbz0du17h8R33ljxfs90A",
+  authDomain: "ss-fashion-hub-2e81a.firebaseapp.com",
+  projectId: "ss-fashion-hub-2e81a",
+  storageBucket: "ss-fashion-hub-2e81a.firebasestorage.app",
+  messagingSenderId: "698101423977",
+  appId: "1:698101423977:web:3730069f7c9c03bff8e7f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+console.log("Firebase Connected Successfully");
+
+const WA="917981046421";
+let isAdmin=false,editId=null,currentCategory="";
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+if(location.hash==="#admin") loginBox.style.display="block";
+
+function login(){
+if(user.value==="Surya"&&pass.value==="1624"){
+isAdmin=true;loginBox.style.display="none";adminPanel.style.display="block";loadProducts();
+}else alert("Wrong login");
+}
+
+function filterCategory(cat){currentCategory=cat;loadProducts()}
+
+async function saveProduct(){
+  let nameVal = document.getElementById("name")?.value.trim();
+  let priceVal = document.getElementById("price")?.value.trim();
+  let imageVal = document.getElementById("image")?.value.trim();
+  let categoryVal = document.getElementById("category")?.value || "";
+  let sizesVal = document.getElementById("sizes")?.value || "";
+  let colorsVal = document.getElementById("colors")?.value || "";
+
+  console.log(nameVal, priceVal, imageVal); // debug
+
+  if(!nameVal || !priceVal || !imageVal){
+    alert("Fill fields properly ❗");
+    return;
+  }
+
+  let data = {
+    name: nameVal,
+    price: priceVal,
+    image: imageVal,
+    category: categoryVal,
+    sizes: sizesVal,
+    colors: colorsVal,
+stock: document.getElementById("stock").value || "0",
+    hidden: false
+  };
+
+  if(editId){
+    await db.collection("products").doc(editId).update(data);
+    editId = null;
+  } else {
+    await db.collection("products").add(data);
+  }
+
+  alert("Saved ✅");
+  loadProducts();
+}
+
+async function deleteProduct(id){await db.collection("products").doc(id).delete();loadProducts()}
+async function toggleHide(id,h){await db.collection("products").doc(id).update({hidden:!h});loadProducts()}
+
+async function editProduct(id){
+  let docSnap = await db.collection("products").doc(id).get();
+  let p = docSnap.data();
+
+  document.getElementById("name").value = p.name || "";
+  document.getElementById("price").value = p.price || "";
+  document.getElementById("image").value = p.image || "";
+  document.getElementById("category").value = p.category || "";
+  document.getElementById("sizes").value = p.sizes || "";
+  document.getElementById("colors").value = p.colors || "";
+
+  editId = id;
+}
+
+function changeImage(id,src){document.getElementById("img-"+id).src=src}
+
+function selectSize(id,el){document.querySelectorAll(`#size-${id} .size-btn`).forEach(e=>e.classList.remove("selected"));el.classList.add("selected")}
+
+function selectColor(id,src,el){changeImage(id,src);document.querySelectorAll(`#color-${id} .color-btn`).forEach(e=>e.classList.remove("selected"));el.classList.add("selected")}
+
+function addToCart(id,name,price){
+  try{
+    // ✅ Size check (compulsory)
+    let sizeEl = document.querySelector(`#size-${id} .selected`);
+    if(!sizeEl){
+      alert("Select size first ❗");
+      return;
+    }
+
+    // ✅ Color (optional)
+    let colorEl = document.querySelector(`#color-${id} .selected`);
+
+    let img =  document.getElementById("img-"+id)?.src || "";
+
+let item = {
+  id: id,
+  name: name,
+  price: price,
+  size: sizeEl.innerText,
+  color: colorEl ? colorEl.style.background : "",
+  image: img
+};
+
+    // ✅ Add to cart
+    let existing = cart.find(i =>
+  i.id===item.id &&
+  i.size===item.size &&
+  i.color===item.color
+);
+
+if(existing){
+
+  existing.qty += 1;
+
+}else{
+
+  item.qty = 1;
+
+  cart.push(item);
+
+}
+
+localStorage.setItem("cart", JSON.stringify(cart));
+
+    // ✅ Count update
+    document.getElementById("cartCount").innerText = cart.length;
+
+    // ✅ UI update (if exists)
+    if(typeof updateCartUI === "function"){
+      updateCartUI();
+    }
+
+    alert("Added to cart ✅");
+
+  }catch(e){
+    console.error(e);
+    alert("Cart error ❗");
+  }
+}
+function updateCartUI(){
+  let box = document.getElementById("cartItems");
+  if(!box) return;
+
+  box.innerHTML = "";
+
+  cart.forEach((item,index)=>{
+    box.innerHTML += `
+      <div class="cart-item">
+        <img src="${item.image}" class="cart-img">
+
+        <div class="cart-details">
+          <h4>${item.name}</h4>
+          <p>₹${item.price}</p>
+          <p>Size: ${item.size}</p>
+
+          <div style="display:flex;align-items:center;">
+            Color:
+            <span style="
+              width:15px;
+              height:15px;
+              background:${item.color};
+              border-radius:50%;
+              display:inline-block;
+              margin-left:5px;">
+            </span>
+          </div>
+
+          <button onclick="removeFromCart(${index})">Remove</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function removeFromCart(i){
+  cart.splice(i,1);
+localStorage.setItem("cart", JSON.stringify(cart));
+  document.getElementById("cartCount").innerText = cart.length;
+  updateCartUI();
+}
+function toggleCart(){
+  let box = document.getElementById("cartBox");
+  if(!box) return;
+
+  box.classList.toggle("show");
+  document.getElementById("overlay").classList.toggle("active");
+}
+
+function orderNow(id,name,price){
+  let sizeEl = document.querySelector(`#size-${id} .selected`);
+  if(!sizeEl){
+    alert("Please select size ❗");
+    return;
+  }
+
+  let colorEl = document.querySelector(`#color-${id} .selected`);
+
+  let msg = `I want ${name}
+Price: ₹${price}
+Size: ${sizeEl.innerText}
+Color: ${colorEl ? colorEl.style.background : ""}
+Link: ${location.href}`;
+
+  window.open(`https://wa.me/917981046421?text=${encodeURIComponent(msg)}`);
+}
+function openModal(id){
+
+  db.collection("products").doc(id).get().then(doc=>{
+
+    let p = doc.data();
+
+    document.getElementById("productModal").style.display = "block";
+
+    let imgs = (p.images || p.image || "").split(",");
+
+    document.getElementById("modalImg").src = imgs[0];
+
+    // thumbnails
+    let thumbBox = document.getElementById("modalThumbs");
+
+    thumbBox.innerHTML = "";
+
+    imgs.forEach(img=>{
+
+      thumbBox.innerHTML += `
+        <img src="${img}"
+        onclick="document.getElementById('modalImg').src='${img}'"
+        style="
+        width:60px;
+        height:60px;
+        object-fit:cover;
+        border-radius:8px;
+        border:1px solid #ccc;
+        cursor:pointer;
+        ">
+      `;
+
+    });
+
+    // name
+    document.getElementById("modalName").innerText = p.name;
+
+    // price
+    document.getElementById("modalPrice").innerText = "₹" + p.price;
+
+    // sizes
+    let sizeBox = document.getElementById("modalSizes");
+
+    sizeBox.innerHTML = "";
+
+    (p.sizes || "").split(",").forEach(s=>{
+
+      if(s.trim()){
+
+        sizeBox.innerHTML += `
+          <button style="
+          padding:8px 15px;
+          border:none;
+          border-radius:8px;
+          background:#eee;
+          ">
+          ${s}
+          </button>
+        `;
+
+      }
+
+    });
+
+    // colors
+    let colorBox = document.getElementById("modalColors");
+
+    colorBox.innerHTML = "";
+
+    (p.colors || "").split(",").forEach((c,i)=>{
+
+      if(c.trim()){
+
+        let img = imgs[i] || imgs[0];
+
+        colorBox.innerHTML += `
+          <span onclick="
+          document.getElementById('modalImg').src='${img}'
+          "
+          style="
+          width:28px;
+          height:28px;
+          border-radius:50%;
+          background:${c};
+          border:2px solid #ccc;
+          display:inline-block;
+          cursor:pointer;
+          ">
+          </span>
+        `;
+
+      }
+
+    });
+
+  });
+
+}
+
+function closeProduct(){
+
+  document.getElementById("productModal").style.display = "none";
+
+}
+
+function selectModalSize(el){
+  document.querySelectorAll("#modalSizes button").forEach(b=>b.classList.remove("selected"));
+  el.classList.add("selected");
+}
+
+function selectModalColor(el){
+  document.querySelectorAll("#modalColors span").forEach(c=>c.classList.remove("selected"));
+  el.classList.add("selected");
+}
+
+function loadProducts(){
+updateCartUI();
+
+document.getElementById("cartCount").innerText = cart.length;
+let list=document.getElementById("productList");list.innerHTML="";
+let searchVal=search.value.toLowerCase();
+
+db.collection("products").get().then(res=>{
+res.forEach(doc=>{
+let p=doc.data();
+if(p.hidden&&!isAdmin)return;
+if(currentCategory && p.category!==currentCategory)return;
+if(searchVal && !p.name.toLowerCase().includes(searchVal))return;
+
+let imgs=(p.image||"").split(",");
+let cols=(p.colors||"").split(",");
+let sz=(p.sizes||"").split(",");
+
+list.innerHTML+=`
+<div class="card" onclick='openModal("${doc.id}")'>
+
+<img id="img-${doc.id}" class="main-img" src="${imgs[0]}">
+
+<div class="thumb-container">
+${imgs.length>1?imgs.map(i=>`<img src="${i}" class="thumb" onclick="changeImage('${doc.id}','${i}')">`).join(""):""}
+</div>
+
+<h4>${p.name}</h4>
+${p.stock <= 0 ? `<p style="color:red;">Out of Stock</p>` : ""}
+<p>₹${p.price}</p>
+
+<div id="size-${doc.id}">
+${sz.map(s=>`<span class="size-btn" onclick="selectSize('${doc.id}',this)">${s}</span>`).join("")}
+</div>
+
+<div id="color-${doc.id}">
+${cols.map((c,i)=>`<span class="color-btn" style="background:${c}" onclick="selectColor('${doc.id}','${imgs[i]||imgs[0]}',this)"></span>`).join("")}
+</div>
+
+<button class="cart-btn" ${p.stock <= 0 ? "disabled" : ""} 
+onclick='event.stopPropagation(); addToCart("${doc.id}", ${JSON.stringify(p.name)}, "${p.price}")'>
+Add to Cart
+</button>
+<button class="wa" ${p.stock <= 0 ? "disabled" : ""} 
+onclick='event.stopPropagation(); orderNow("${doc.id}", "${p.name}", "${p.price}")'>
+Order
+</button>
+
+${isAdmin?`
+<button onclick="editProduct('${doc.id}')">Edit</button>
+<button onclick="deleteProduct('${doc.id}')">Delete</button>
+<button onclick="toggleHide('${doc.id}',${p.hidden})">${p.hidden?'Unhide':'Hide'}</button>
+`:""}
+
+</div>`;
+
+});
+});
+}
+
+loadProducts();
+</script></body>
+</html>
